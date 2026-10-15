@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CITYTYCOON - Indian City Property Board Game</title>
+<style>
+:root {
+  --bg-main: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-light: #e2e8f0;
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.12);
+  --shadow-lg: 0 16px 36px rgba(15, 23, 42, 0.16);
+
+  /* Player Accents */
+  --p1-red: #ef4444;
+  --p2-blue: #2563eb;
+  --p3-green: #10b981;
+  --p4-yellow: #f59e0b;
+
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-main);
+  background-image: 
+    radial-gradient(#e2e8f0 1.2px, transparent 1.2px), 
+    radial-gradient(#f1f5f9 1.2px, var(--bg-main) 1.2px);
+  background-size: 28px 28px;
+  background-position: 0 0, 14px 14px;
+  color: var(--text-main);
+  min-height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#game-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  max-width: 1200px;
+  max-height: 1000px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+/* Header strip */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 42px;
+  padding: 0 8px;
+  z-index: 10;
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+  color: #0f172a;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.brand-badge .brand-tag {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.8px;
+}
+
+.current-status-banner {
+  background: #ffffff;
+  border: 1.5px solid var(--border-light);
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Board + Corner Panels Arena */
+#board-arena {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+#canvas-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+canvas#board-canvas {
+  display: block;
+  border-radius: 20px;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(226, 232, 240, 0.9);
+  background: #ffffff;
+  touch-action: none;
+}
+
+/* Four Corner Player Cards - Bright White Modern UI */
+.corner-card {
+  position: absolute;
+  width: 175px;
+  background: #ffffff;
+  border: 2px solid var(--border-light);
+  border-radius: 16px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
+  z-index: 15;
+  pointer-events: none;
+}
+
+/* Corner positions */
+.corner-tl { top: 6px; left: 6px; border-left: 5px solid var(--p1-red); }
+.corner-tr { top: 6px; right: 6px; border-right: 5px solid var(--p2-blue); }
+.corner-bl { bottom: 6px; left: 6px; border-left: 5px solid var(--p3-green); }
+.corner-br { bottom: 6px; right: 6px; border-right: 5px solid var(--p4-yellow); }
+
+/* Active player glowing highlights */
+.corner-card.active-turn {
+  transform: scale(1.05);
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.18);
+  background: #fdfdfd;
+}
+
+.corner-tl.active-turn { border-color: var(--p1-red); box-shadow: 0 0 22px rgba(239, 68, 68, 0.35); }
+.corner-tr.active-turn { border-color: var(--p2-blue); box-shadow: 0 0 22px rgba(37, 99, 235, 0.35); }
+.corner-bl.active-turn { border-color: var(--p3-green); box-shadow: 0 0 22px rgba(16, 185, 129, 0.35); }
+.corner-br.active-turn { border-color: var(--p4-yellow); box-shadow: 0 0 22px rgba(245, 158, 11, 0.4); }
+
+.player-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.player-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.player-avatar {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.turn-badge {
+  display: none;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  animation: pulse 1.4s infinite;
+}
+
+.corner-tl.active-turn .turn-badge { background: var(--p1-red); }
+.corner-tr.active-turn .turn-badge { background: var(--p2-blue); }
+.corner-bl.active-turn .turn-badge { background: var(--p3-green); }
+.corner-br.active-turn .turn-badge { background: var(--p4-yellow); }
+
+.corner-card.active-turn .turn-badge {
+  display: inline-block;
+}
+
+.player-money {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #059669;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.player-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 2px;
+  border-top: 1px solid var(--border-light);
+  padding-top: 4px;
+}
+
+/* Control footer bar */
+.bottom-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 6px 12px;
+  z-index: 20;
+}
+
+/* Dice & Roll Button Component */
+.dice-action-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 1.5px solid var(--border-light);
+  padding: 6px 16px 6px 8px;
+  border-radius: 50px;
+  box-shadow: var(--shadow-md);
+}
+
+.dice-display-box {
+  width: 44px;
+  height: 44px;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
+  color: #0f172a;
+  transition: transform 0.15s ease;
+}
+
+.dice-display-box.rolling {
+  animation: diceWobble 0.22s infinite alternate;
+}
+
+.btn-roll {
+  appearance: none;
+  border: none;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  padding: 10px 24px;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-roll:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fb923c 0%, #c2410c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(234, 88, 12, 0.45);
+}
+
+.btn-roll:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-roll:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(40%);
+  transform: none;
+}
+
+/* Toast Notifications */
+#toast-container {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.toast {
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #ffffff;
+  padding: 8px 20px;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn 0.3s ease-out forwards;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-box {
+  background: #ffffff;
+  border: 1.5px solid var(--border-light);
+  border-radius: 22px;
+  padding: 24px;
+  width: 90%;
+  max-width: 380px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  transform: scale(0.92);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-overlay.active .modal-box {
+  transform: scale(1);
+}
+
+.modal-title {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.modal-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  color: #ffffff;
+}
+
+.modal-stats {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 18px;
+  display: flex;
+  justify-content: space-around;
+  border: 1.5px solid var(--border-light);
+}
+
+.modal-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.stat-val {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-modal {
+  flex: 1;
+  padding: 11px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.btn-buy {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.btn-buy:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-skip {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.btn-skip:hover {
+  background: #cbd5e1;
+}
+
+.btn-start-game {
+  background: linear-gradient(135deg, #ea580c, #f97316);
+  color: white;
+  width: 100%;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(234, 88, 12, 0.4);
+  transition: transform 0.2s;
+}
+
+.btn-start-game:hover {
+  transform: translateY(-2px);
+}
+
+/* ==================================================
+   BANNER AD CONTAINER (Light Clean Theme)
+   ================================================== */
+#bannerAd {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2px;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.ad-placeholder {
+  width: 100%;
+  max-width: 728px;
+  min-height: 48px;
+  height: 50px;
+  background: #ffffff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  user-select: none;
+  pointer-events: none;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.ad-placeholder::after {
+  content: "Responsive Ad Area (320x50 / 728x90)";
+  font-size: 0.62rem;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+@keyframes diceWobble {
+  0% { transform: rotate(-14deg) scale(0.95); }
+  100% { transform: rotate(14deg) scale(1.05); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 768px) {
+  #game-wrapper {
+    padding: 6px;
+  }
+  .top-bar {
+    height: 36px;
+  }
+  .brand-badge {
+    font-size: 1.05rem;
+  }
+  .current-status-banner {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+  }
+  .corner-card {
+    width: 130px;
+    padding: 6px 8px;
+    border-radius: 12px;
+  }
+  .player-name-wrap {
+    font-size: 0.78rem;
+  }
+  .player-avatar {
+    font-size: 1.05rem;
+  }
+  .player-money {
+    font-size: 0.95rem;
+  }
+  .player-details {
+    font-size: 0.64rem;
+  }
+  .corner-tl { top: 2px; left: 2px; }
+  .corner-tr { top: 2px; right: 2px; }
+  .corner-bl { bottom: 2px; left: 2px; }
+  .corner-br { bottom: 2px; right: 2px; }
+  .btn-roll {
+    padding: 8px 18px;
+    font-size: 0.85rem;
+  }
+  .dice-display-box {
+    width: 38px;
+    height: 38px;
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .corner-card {
+    width: 104px;
+    padding: 4px 6px;
+  }
+  .player-name-wrap span:last-child {
+    max-width: 52px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .turn-badge {
+    display: none !important;
+  }
+  .player-details {
+    display: none;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="game-wrapper">
+  
+  <!-- Header Notification & Title -->
+  <header class="top-bar">
+    <div class="brand-badge">
+      <span>🏙️</span>
+      <span>CITYTYCOON</span>
+      <span class="brand-tag">INDIA</span>
+    </div>
+    <div id="turn-banner" class="current-status-banner">
+      <span id="turn-avatar">🔴</span>
+      <span id="turn-text">Player 1's Turn</span>
+    </div>
+  </header>
+
+  <!-- Board Area with 4 Corner Player Blocks -->
+  <main id="board-arena">
+    <!-- Player 1 (Top-Left) -->
+    <div id="p-card-0" class="corner-card corner-tl active-turn">
+      <div class="player-header">
+        <div class="player-name-wrap">
+          <span class="player-avatar">🔴</span>
+          <span>Player 1</span>
+        </div>
+        <span class="turn-badge">YOUR TURN</span>
+      </div>
+      <div class="player-money" id="p-money-0">₹1500</div>
+      <div class="player-details">
+        <span>Estates: <strong id="p-props-0">0</strong></span>
+        <span id="p-pos-0">START</span>
+      </div>
+    </div>
+
+    <!-- Player 2 (Top-Right) -->
+    <div id="p-card-1" class="corner-card corner-tr">
+      <div class="player-header">
+        <div class="player-name-wrap">
+          <span class="player-avatar">🔵</span>
+          <span>Player 2</span>
+        </div>
+        <span class="turn-badge">YOUR TURN</span>
+      </div>
+      <div class="player-money" id="p-money-1">₹1500</div>
+      <div class="player-details">
+        <span>Estates: <strong id="p-props-1">0</strong></span>
+        <span id="p-pos-1">START</span>
+      </div>
+    </div>
+
+    <!-- Player 3 (Bottom-Left) -->
+    <div id="p-card-2" class="corner-card corner-bl">
+      <div class="player-header">
+        <div class="player-name-wrap">
+          <span class="player-avatar">🟢</span>
+          <span>Player 3</span>
+        </div>
+        <span class="turn-badge">YOUR TURN</span>
+      </div>
+      <div class="player-money" id="p-money-2">₹1500</div>
+      <div class="player-details">
+        <span>Estates: <strong id="p-props-2">0</strong></span>
+        <span id="p-pos-2">START</span>
+      </div>
+    </div>
+
+    <!-- Player 4 (Bottom-Right) -->
+    <div id="p-card-3" class="corner-card corner-br">
+      <div class="player-header">
+        <div class="player-name-wrap">
+          <span class="player-avatar">🟡</span>
+          <span>Player 4</span>
+        </div>
+        <span class="turn-badge">YOUR TURN</span>
+      </div>
+      <div class="player-money" id="p-money-3">₹1500</div>
+      <div class="player-details">
+        <span>Estates: <strong id="p-props-3">0</strong></span>
+        <span id="p-pos-3">START</span>
+      </div>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="canvas-container">
+      <canvas id="board-canvas"></canvas>
+    </div>
+  </main>
+
+  <!-- Controls Footer -->
+  <footer class="bottom-controls">
+    <div class="dice-action-area">
+      <div id="dice-view" class="dice-display-box">🎲</div>
+      <button id="roll-btn" class="btn-roll" onclick="rollDice()">
+        <span>ROLL DICE</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Dedicated Banner Ad Container (Completely outside the Canvas) -->
+  <div id="bannerAd">
+    <div class="ad-placeholder">
+      ADVERTISEMENT
+    </div>
+  </div>
+
+  <!-- Toasts container -->
+  <div id="toast-container"></div>
+
+  <!-- Welcome / Start Game Overlay -->
+  <div id="start-modal" class="modal-overlay active">
+    <div class="modal-box">
+      <div style="font-size: 3rem; margin-bottom: 8px;">🏙️</div>
+      <h2 class="modal-title" style="font-size: 1.6rem; color: #ea580c;">CITYTYCOON</h2>
+      <p style="color: #64748b; font-size: 0.85rem; font-weight: 700; margin-bottom: 12px; letter-spacing: 0.5px;">
+        BUILD YOUR CITY. GROW YOUR EMPIRE.
+      </p>
+      <p style="color: #475569; font-size: 0.88rem; line-height: 1.45; margin-bottom: 20px;">
+        Acquire prime estates across North, West, South, East, Central India, and Heritage corridors. Collect rents, ride express metros, and rule the subcontinent!
+      </p>
+      <div style="display: flex; justify-content: center; gap: 14px; margin-bottom: 22px; font-size: 1.6rem;">
+        <span>🔴</span><span>🔵</span><span>🟢</span><span>🟡</span>
+      </div>
+      <button class="btn-start-game" onclick="startGame()">START GAME</button>
+    </div>
+  </div>
+
+  <!-- Property Purchase Modal -->
+  <div id="property-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div id="prop-badge" class="modal-badge" style="background: #2563eb;">PROPERTY</div>
+      <h3 id="prop-title" class="modal-title">City Name</h3>
+      
+      <div class="modal-stats">
+        <div class="modal-stat-item">
+          <span class="stat-label">Price</span>
+          <span id="prop-price" class="stat-val">₹100</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="stat-label">Rent</span>
+          <span id="prop-rent" class="stat-val" style="color: #10b981;">₹10</span>
+        </div>
+      </div>
+
+      <p id="prop-decision-msg" style="font-size: 0.88rem; color: #64748b; font-weight: 600; margin-bottom: 18px;">
+        Would you like to purchase this property?
+      </p>
+
+      <div class="modal-actions">
+        <button id="buy-confirm-btn" class="btn-modal btn-buy" onclick="confirmBuyProperty()">BUY</button>
+        <button id="buy-skip-btn" class="btn-modal btn-skip" onclick="skipProperty()">SKIP</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/**
+ * CITYTYCOON - Indian City Property Board Game
+ * Vibrant regional groups on clean white board
+ */
+
+const GROUP_COLORS = {
+  north:    '#2563eb', // Blue - North India
+  west:     '#ea580c', // Orange - West India
+  south:    '#10b981', // Green - South India
+  east:     '#db2777', // Pink - East India
+  central:  '#8b5cf6', // Purple - Central India
+  heritage: '#eab308', // Warm Gold/Yellow - UP & Heritage
+  rajasthan:'#0d9488', // Teal - Rajasthan
+  premium:  '#dc2626', // Red - Premium Metros
+  transit:  '#0284c7', // Cyan Blue - Metro & Railways
+  utility:  '#059669', // Emerald - Energy & Utilities
+  special:  '#64748b'  // Slate
+};
+
+// 40 Board Spaces configured with Indian Cities & Regional Hubs
+const BOARD_TILES = [
+  { index: 0,  name: "START",        type: "start",     price: 0,   rent: 0,  group: "special",  icon: "🏁" },
+  { index: 1,  name: "Amritsar",     type: "property",  price: 100, rent: 10, group: "north",    icon: "🏛️" },
+  { index: 2,  name: "Chandigarh",   type: "property",  price: 120, rent: 12, group: "north",    icon: "🌳" },
+  { index: 3,  name: "Delhi NCR",    type: "property",  price: 140, rent: 14, group: "north",    icon: "🏙️" },
+  { index: 4,  name: "MUNICIPAL TAX",type: "tax",       price: 100, rent: 0,  group: "special",  icon: "💸" },
+  { index: 5,  name: "Metro Rail",   type: "transport", price: 200, rent: 25, group: "transit",  icon: "🚆" },
+  { index: 6,  name: "Ahmedabad",    type: "property",  price: 160, rent: 16, group: "west",     icon: "🏭" },
+  { index: 7,  name: "EVENT",        type: "event",     price: 0,   rent: 0,  group: "special",  icon: "❓" },
+  { index: 8,  name: "Surat",        type: "property",  price: 180, rent: 18, group: "west",     icon: "💎" },
+  { index: 9,  name: "Pune",         type: "property",  price: 200, rent: 20, group: "west",     icon: "🎓" },
+  { index: 10, name: "CHALLAN / JAIL",type:"jail",      price: 0,   rent: 0,  group: "special",  icon: "🔒" },
+  { index: 11, name: "Chennai",      type: "property",  price: 220, rent: 22, group: "south",    icon: "🏖️" },
+  { index: 12, name: "Solar Grid",   type: "utility",   price: 150, rent: 15, group: "utility",  icon: "☀️" },
+  { index: 13, name: "Kochi",        type: "property",  price: 240, rent: 24, group: "south",    icon: "🌴" },
+  { index: 14, name: "Hyderabad",    type: "property",  price: 260, rent: 26, group: "south",    icon: "🏰" },
+  { index: 15, name: "Express Rail", type: "transport", price: 200, rent: 25, group: "transit",  icon: "🚉" },
+  { index: 16, name: "Bhubaneswar",  type: "property",  price: 280, rent: 28, group: "east",     icon: "🛕" },
+  { index: 17, name: "EVENT",        type: "event",     price: 0,   rent: 0,  group: "special",  icon: "❓" },
+  { index: 18, name: "Patna",        type: "property",  price: 300, rent: 30, group: "east",     icon: "🌊" },
+  { index: 19, name: "ROAD TOLL",    type: "tax",       price: 150, rent: 0,  group: "special",  icon: "🛣️" },
+  { index: 20, name: "CITY PARK",    type: "rest",      price: 0,   rent: 0,  group: "special",  icon: "☕" },
+  { index: 21, name: "Nagpur",       type: "property",  price: 320, rent: 32, group: "central",  icon: "🍊" },
+  { index: 22, name: "Bhopal",       type: "property",  price: 340, rent: 34, group: "central",  icon: "🏞️" },
+  { index: 23, name: "EVENT",        type: "event",     price: 0,   rent: 0,  group: "special",  icon: "❓" },
+  { index: 24, name: "Indore",       type: "property",  price: 360, rent: 36, group: "central",  icon: "✨" },
+  { index: 25, name: "Vande Bharat", type: "transport", price: 200, rent: 25, group: "transit",  icon: "🚅" },
+  { index: 26, name: "Varanasi",     type: "property",  price: 380, rent: 38, group: "heritage", icon: "🪔" },
+  { index: 27, name: "Agra",         type: "property",  price: 400, rent: 40, group: "heritage", icon: "🏛️" },
+  { index: 28, name: "Lucknow",      type: "property",  price: 420, rent: 42, group: "heritage", icon: "🕌" },
+  { index: 29, name: "GST CESS",     type: "tax",       price: 200, rent: 0,  group: "special",  icon: "📑" },
+  { index: 30, name: "POLICE LOCKUP",type: "gojail",    price: 0,   rent: 0,  group: "special",  icon: "🚨" },
+  { index: 31, name: "Udaipur",      type: "property",  price: 440, rent: 44, group: "rajasthan",icon: "⛵" },
+  { index: 32, name: "Jodhpur",      type: "property",  price: 460, rent: 46, group: "rajasthan",icon: "🏰" },
+  { index: 33, name: "EVENT",        type: "event",     price: 0,   rent: 0,  group: "special",  icon: "❓" },
+  { index: 34, name: "Jaipur",       type: "property",  price: 480, rent: 48, group: "rajasthan",icon: "👑" },
+  { index: 35, name: "Airport Metro",type: "transport", price: 200, rent: 25, group: "transit",  icon: "🛫" },
+  { index: 36, name: "Kolkata Hub",  type: "property",  price: 520, rent: 52, group: "east",     icon: "🌉" },
+  { index: 37, name: "EVENT",        type: "event",     price: 0,   rent: 0,  group: "special",  icon: "❓" },
+  { index: 38, name: "Bengaluru IT", type: "property",  price: 560, rent: 56, group: "premium",  icon: "💻" },
+  { index: 39, name: "Mumbai Marine",type: "property",  price: 600, rent: 60, group: "premium",  icon: "🌊" }
+];
+
+const gameState = {
+  players: [
+    { id: 0, name: "Player 1", avatar: "🔴", money: 1500, position: 0, properties: [], inJail: false, renderX: 0, renderY: 0 },
+    { id: 1, name: "Player 2", avatar: "🔵", money: 1500, position: 0, properties: [], inJail: false, renderX: 0, renderY: 0 },
+    { id: 2, name: "Player 3", avatar: "🟢", money: 1500, position: 0, properties: [], inJail: false, renderX: 0, renderY: 0 },
+    { id: 3, name: "Player 4", avatar: "🟡", money: 1500, position: 0, properties: [], inJail: false, renderX: 0, renderY: 0 }
+  ],
+  properties: [],
+  currentPlayer: 0,
+  diceValue: 1,
+  isRolling: false,
+  isMoving: false,
+  gameStarted: false,
+  pendingLandingTile: null
+};
+
+// Canvas & Dimension Variables
+let canvas = null;
+let ctx = null;
+let boardSize = 900;
+let scaleFactor = 1;
+let tileBoxes = []; // Precomputed bounding boxes of tiles in internal coordinates (900x900)
+
+function initializeGame() {
+  canvas = document.getElementById("board-canvas");
+  ctx = canvas.getContext("2d");
+
+  // Deep clone property template
+  gameState.properties = BOARD_TILES.map(tile => ({
+    ...tile,
+    owner: null
+  }));
+
+  computeTileGeometry();
+  setupEventListeners();
+  resizeCanvas();
+  updatePlayerPanels();
+
+  // Animation Loop
+  requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+  const modal = document.getElementById("start-modal");
+  modal.classList.remove("active");
+  gameState.gameStarted = true;
+  showNotification("Game started! Player 1 rolls first.");
+  updatePlayerPanels();
+}
+
+function setupEventListeners() {
+  window.addEventListener("resize", resizeCanvas);
+}
+
+function computeTileGeometry() {
+  const logicalResolution = 900;
+  boardSize = logicalResolution;
+
+  const cornerRatio = 1.35;
+  const regularTilesCount = 9;
+  const totalUnits = (cornerRatio * 2) + regularTilesCount; 
+  const regularWidth = logicalResolution / totalUnits;
+  const cornerWidth = regularWidth * cornerRatio;
+
+  tileBoxes = new Array(40);
+
+  // Bottom edge: Tile 0 (Bottom-Right) to Tile 10 (Bottom-Left)
+  let curX = logicalResolution - cornerWidth;
+  tileBoxes[0] = { x: curX, y: logicalResolution - cornerWidth, w: cornerWidth, h: cornerWidth, orientation: 'bottom-corner' };
+
+  for (let i = 1; i <= 9; i++) {
+    curX -= regularWidth;
+    tileBoxes[i] = { x: curX, y: logicalResolution - cornerWidth, w: regularWidth, h: cornerWidth, orientation: 'bottom' };
+  }
+
+  tileBoxes[10] = { x: 0, y: logicalResolution - cornerWidth, w: cornerWidth, h: cornerWidth, orientation: 'corner' };
+
+  // Left edge: Tile 11 to Tile 19 going UP
+  let curY = logicalResolution - cornerWidth;
+  for (let i = 11; i <= 19; i++) {
+    curY -= regularWidth;
+    tileBoxes[i] = { x: 0, y: curY, w: cornerWidth, h: regularWidth, orientation: 'left' };
+  }
+
+  // Top-Left corner: Tile 20
+  tileBoxes[20] = { x: 0, y: 0, w: cornerWidth, h: cornerWidth, orientation: 'corner' };
+
+  // Top edge: Tile 21 to Tile 29 going RIGHT
+  curX = cornerWidth;
+  for (let i = 21; i <= 29; i++) {
+    tileBoxes[i] = { x: curX, y: 0, w: regularWidth, h: cornerWidth, orientation: 'top' };
+    curX += regularWidth;
+  }
+
+  // Top-Right corner: Tile 30
+  tileBoxes[30] = { x: logicalResolution - cornerWidth, y: 0, w: cornerWidth, h: cornerWidth, orientation: 'corner' };
+
+  // Right edge: Tile 31 to Tile 39 going DOWN
+  curY = cornerWidth;
+  for (let i = 31; i <= 39; i++) {
+    tileBoxes[i] = { x: logicalResolution - cornerWidth, y: curY, w: cornerWidth, h: regularWidth, orientation: 'right' };
+    curY += regularWidth;
+  }
+
+  // Initialize initial player positions
+  gameState.players.forEach(p => {
+    const coords = getTileTokenCenter(p.position, p.id);
+    p.renderX = coords.x;
+    p.renderY = coords.y;
+  });
+}
+
+function resizeCanvas() {
+  if (!canvas) return;
+  const container = document.getElementById("canvas-container");
+  const rect = container.getBoundingClientRect();
+  
+  const minDim = Math.min(rect.width, rect.height) - 10;
+  const displaySize = Math.max(300, Math.floor(minDim));
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(displaySize * dpr);
+  canvas.height = Math.round(displaySize * dpr);
+  canvas.style.width = displaySize + "px";
+  canvas.style.height = displaySize + "px";
+
+  scaleFactor = (displaySize * dpr) / boardSize;
+  ctx.resetTransform();
+  ctx.scale(scaleFactor, scaleFactor);
+}
+
+function getTileTokenCenter(tileIndex, playerId) {
+  const box = tileBoxes[tileIndex];
+  if (!box) return { x: 0, y: 0 };
+
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+
+  const offsetDistance = Math.min(box.w, box.h) * 0.22;
+  const offsets = [
+    { dx: -offsetDistance, dy: -offsetDistance }, // P1
+    { dx:  offsetDistance, dy: -offsetDistance }, // P2
+    { dx: -offsetDistance, dy:  offsetDistance }, // P3
+    { dx:  offsetDistance, dy:  offsetDistance }  // P4
+  ];
+
+  return {
+    x: cx + offsets[playerId].dx,
+    y: cy + offsets[playerId].dy
+  };
+}
+
+function gameLoop() {
+  updateGame();
+  drawGame();
+  requestAnimationFrame(gameLoop);
+}
+
+function updateGame() {
+  gameState.players.forEach(p => {
+    const target = getTileTokenCenter(p.position, p.id);
+    const dx = target.x - p.renderX;
+    const dy = target.y - p.renderY;
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+      p.renderX += dx * 0.22;
+      p.renderY += dy * 0.22;
+    } else {
+      p.renderX = target.x;
+      p.renderY = target.y;
+    }
+  });
+}
+
+function drawGame() {
+  if (!ctx) return;
+  ctx.save();
+
+  // Clear background with crisp clean white
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, boardSize, boardSize);
+
+  drawBoard();
+  drawCenter();
+  drawTiles();
+  drawPlayers();
+
+  ctx.restore();
+}
+
+function drawBoard() {
+  // Outer frame
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, boardSize, boardSize);
+
+  const cornerRatio = 1.35;
+  const regularTilesCount = 9;
+  const totalUnits = (cornerRatio * 2) + regularTilesCount; 
+  const regularWidth = boardSize / totalUnits;
+  const cornerWidth = regularWidth * cornerRatio;
+
+  const innerX = cornerWidth;
+  const innerY = cornerWidth;
+  const innerSize = boardSize - (cornerWidth * 2);
+
+  // Playfield interior background - crisp light surface
+  ctx.fillStyle = "#fafbfc";
+  ctx.fillRect(innerX, innerY, innerSize, innerSize);
+
+  // Soft geometric city road grid pattern
+  ctx.strokeStyle = "rgba(226, 232, 240, 0.7)";
+  ctx.lineWidth = 1;
+  const step = innerSize / 10;
+  for (let i = 0; i <= innerSize; i += step) {
+    ctx.beginPath();
+    ctx.moveTo(innerX + i, innerY);
+    ctx.lineTo(innerX + i, innerY + innerSize);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(innerX, innerY + i);
+    ctx.lineTo(innerX + innerSize, innerY + i);
+    ctx.stroke();
+  }
+
+  // Inner border bevel
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(innerX, innerY, innerSize, innerSize);
+}
+
+function drawCenter() {
+  const cx = boardSize / 2;
+  const cy = boardSize / 2;
+
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  // Central Card Frame
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(15, 23, 42, 0.08)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 4;
+  ctx.beginPath();
+  ctx.roundRect(cx - 195, cy - 115, 390, 230, 24);
+  ctx.fill();
+
+  ctx.shadowColor = "transparent";
+  ctx.strokeStyle = "#e2e8f0";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Indian Landmark & Skyline Emojis
+  ctx.font = "40px 'Segoe UI Emoji', AppleColorEmoji, sans-serif";
+  ctx.fillText("🛺  🏛️  🏙️  🚆  🏢", cx, cy - 54);
+
+  // Title: CITYTYCOON
+  ctx.fillStyle = "#ea580c";
+  ctx.font = "900 36px var(--font-family)";
+  ctx.letterSpacing = "2px";
+  ctx.fillText("CITYTYCOON", cx, cy - 2);
+
+  // Indian Edition Tag
+  ctx.fillStyle = "#2563eb";
+  ctx.font = "800 12px var(--font-family)";
+  ctx.letterSpacing = "2.5px";
+  ctx.fillText("INDIAN METROPOLIS EDITION", cx, cy + 30);
+
+  // Requested Motto
+  ctx.fillStyle = "#64748b";
+  ctx.font = "italic 700 13px var(--font-family)";
+  ctx.letterSpacing = "0.5px";
+  ctx.fillText("“Build Your City. Grow Your Empire.”", cx, cy + 62);
+
+  // Decorative saffron & green mini bar
+  ctx.fillStyle = "#f97316";
+  ctx.fillRect(cx - 36, cy + 82, 34, 4);
+  ctx.fillStyle = "#10b981";
+  ctx.fillRect(cx + 2, cy + 82, 34, 4);
+
+  ctx.restore();
+}
+
+function drawTiles() {
+  gameState.properties.forEach((tile, idx) => {
+    const box = tileBoxes[idx];
+    if (!box) return;
+
+    ctx.save();
+
+    // Tile base background - pure white and soft cloud tint
+    ctx.fillStyle = (idx % 2 === 0) ? "#ffffff" : "#f8fafc";
+    ctx.fillRect(box.x, box.y, box.w, box.h);
+
+    // Border line
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(box.x, box.y, box.w, box.h);
+
+    // Group Color Strip for properties
+    drawTileHeader(box, tile);
+
+    // Tile text details
+    drawTileContent(box, tile);
+
+    // Ownership indicator banner
+    if (tile.owner !== null) {
+      drawTileOwnership(box, tile);
+    }
+
+    ctx.restore();
+  });
+}
+
+function drawTileHeader(box, tile) {
+  const color = GROUP_COLORS[tile.group] || "#64748b";
+  const stripSize = (box.orientation === 'left' || box.orientation === 'right') ? 11 : 13;
+
+  ctx.fillStyle = color;
+  if (tile.type === "property" || tile.type === "transport" || tile.type === "utility") {
+    if (box.orientation === 'bottom') {
+      ctx.fillRect(box.x, box.y, box.w, stripSize);
+    } else if (box.orientation === 'top') {
+      ctx.fillRect(box.x, box.y + box.h - stripSize, box.w, stripSize);
+    } else if (box.orientation === 'left') {
+      ctx.fillRect(box.x + box.w - stripSize, box.y, stripSize, box.h);
+    } else if (box.orientation === 'right') {
+      ctx.fillRect(box.x, box.y, stripSize, box.h);
+    }
+  }
+}
+
+function drawTileContent(box, tile) {
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  if (tile.type === "start") {
+    ctx.fillStyle = "#10b981";
+    ctx.font = "900 16px var(--font-family)";
+    ctx.fillText("START", cx, cy - 18);
+    ctx.font = "24px 'Segoe UI Emoji'";
+    ctx.fillText("🏁", cx, cy + 6);
+    ctx.fillStyle = "#047857";
+    ctx.font = "800 12px var(--font-family)";
+    ctx.fillText("+₹200", cx, cy + 30);
+    return;
+  }
+
+  if (tile.type === "jail") {
+    ctx.font = "22px 'Segoe UI Emoji'";
+    ctx.fillText("🔒", cx, cy - 14);
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "800 12px var(--font-family)";
+    ctx.fillText("CHALLAN", cx, cy + 10);
+    ctx.fillStyle = "#64748b";
+    ctx.font = "700 9px var(--font-family)";
+    ctx.fillText("Visiting Only", cx, cy + 24);
+    return;
+  }
+
+  if (tile.type === "rest") {
+    ctx.font = "22px 'Segoe UI Emoji'";
+    ctx.fillText("☕", cx, cy - 14);
+    ctx.fillStyle = "#0284c7";
+    ctx.font = "800 13px var(--font-family)";
+    ctx.fillText("CITY PARK", cx, cy + 10);
+    ctx.fillStyle = "#64748b";
+    ctx.font = "700 9px var(--font-family)";
+    ctx.fillText("Free Halting", cx, cy + 24);
+    return;
+  }
+
+  if (tile.type === "gojail") {
+    ctx.font = "22px 'Segoe UI Emoji'";
+    ctx.fillText("🚨", cx, cy - 14);
+    ctx.fillStyle = "#dc2626";
+    ctx.font = "800 12px var(--font-family)";
+    ctx.fillText("POLICE", cx, cy + 10);
+    ctx.fillText("LOCKUP", cx, cy + 24);
+    return;
+  }
+
+  if (tile.type === "event") {
+    ctx.font = "18px 'Segoe UI Emoji'";
+    ctx.fillText("❓", cx, cy - 8);
+    ctx.fillStyle = "#ea580c";
+    ctx.font = "800 11px var(--font-family)";
+    ctx.fillText("EVENT", cx, cy + 12);
+    return;
+  }
+
+  if (tile.type === "tax") {
+    ctx.font = "16px 'Segoe UI Emoji'";
+    ctx.fillText(tile.icon || "💸", cx, cy - 10);
+    ctx.fillStyle = "#b91c1c";
+    ctx.font = "800 10px var(--font-family)";
+    ctx.fillText(tile.name, cx, cy + 7);
+    ctx.font = "700 10px var(--font-family)";
+    ctx.fillText(`-₹${tile.price}`, cx, cy + 21);
+    return;
+  }
+
+  if (tile.type === "transport" || tile.type === "utility") {
+    ctx.font = "16px 'Segoe UI Emoji'";
+    ctx.fillText(tile.icon || "🚆", cx, cy - 10);
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "800 10px var(--font-family)";
+    ctx.fillText(tile.name, cx, cy + 6);
+    ctx.fillStyle = "#0369a1";
+    ctx.font = "800 9px var(--font-family)";
+    ctx.fillText(`₹${tile.price}`, cx, cy + 20);
+    return;
+  }
+
+  // Standard Indian Property Space
+  ctx.fillStyle = "#0f172a";
+  ctx.font = "800 11px var(--font-family)";
+
+  // Split multi-word names cleanly
+  const words = tile.name.split(" ");
+  if (words.length > 1) {
+    ctx.fillText(words[0], cx, cy - 6);
+    ctx.fillText(words.slice(1).join(" "), cx, cy + 6);
+  } else {
+    ctx.fillText(tile.name, cx, cy - 2);
+  }
+
+  ctx.fillStyle = "#0284c7";
+  ctx.font = "800 10px var(--font-family)";
+  ctx.fillText(`₹${tile.price}`, cx, cy + 18);
+}
+
+// Glossy ball color themes for all 4 players
+const BALL_CONFIGS = [
+  { light: '#fca5a5', main: '#ef4444', mid: '#dc2626', dark: '#7f1d1d', stroke: '#991b1b', halo: 'rgba(239, 68, 68, 0.45)' }, // P1 Red
+  { light: '#93c5fd', main: '#2563eb', mid: '#1d4ed8', dark: '#172554', stroke: '#1e40af', halo: 'rgba(37, 99, 235, 0.45)' },  // P2 Blue
+  { light: '#86efac', main: '#10b981', mid: '#059669', dark: '#064e3b', stroke: '#047857', halo: 'rgba(16, 185, 129, 0.45)' }, // P3 Green
+  { light: '#fef08a', main: '#f59e0b', mid: '#d97706', dark: '#78350f', stroke: '#b45309', halo: 'rgba(245, 158, 11, 0.45)' }  // P4 Yellow
+];
+
+function drawGlossyBall(ctx, x, y, radius, playerId, isCurrentTurn = false) {
+  const cfg = BALL_CONFIGS[playerId];
+  if (!cfg) return;
+
+  ctx.save();
+
+  // Active turn glowing pulse halo under the ball
+  if (isCurrentTurn) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(x, y + radius * 0.75, radius * 1.55, radius * 0.75, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cfg.halo;
+    ctx.shadowColor = cfg.main;
+    ctx.shadowBlur = 14;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 1. Soft realistic drop shadow on board tile
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(x, y + radius * 0.82, radius * 1.15, radius * 0.48, 0, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(15, 23, 42, 0.32)";
+  ctx.shadowColor = "rgba(15, 23, 42, 0.3)";
+  ctx.shadowBlur = 5;
+  ctx.fill();
+  ctx.restore();
+
+  // 2. 3D Spherical body (radial gradient offset to top-left light source)
+  const sphereGrad = ctx.createRadialGradient(
+    x - radius * 0.35,
+    y - radius * 0.35,
+    radius * 0.05,
+    x,
+    y,
+    radius
+  );
+  sphereGrad.addColorStop(0, cfg.light);
+  sphereGrad.addColorStop(0.28, cfg.main);
+  sphereGrad.addColorStop(0.72, cfg.mid);
+  sphereGrad.addColorStop(1, cfg.dark);
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = sphereGrad;
+  ctx.fill();
+
+  // Sharp outer contour stroke for contrast
+  ctx.strokeStyle = cfg.stroke;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // 3. Bottom-right subtle bounce reflection / rim light
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, radius - 0.5, 0, Math.PI * 2);
+  ctx.clip();
+
+  const bounceGrad = ctx.createRadialGradient(
+    x + radius * 0.35,
+    y + radius * 0.35,
+    radius * 0.1,
+    x + radius * 0.35,
+    y + radius * 0.35,
+    radius * 0.7
+  );
+  bounceGrad.addColorStop(0, "rgba(255, 255, 255, 0.32)");
+  bounceGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = bounceGrad;
+  ctx.fill();
+
+  // 4. Glossy curved dome specular highlight (egg-shaped reflection)
+  ctx.save();
+  ctx.translate(x - radius * 0.26, y - radius * 0.3);
+  ctx.rotate(-Math.PI / 6);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, radius * 0.46, radius * 0.26, 0, 0, Math.PI * 2);
+  const specGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, radius * 0.46);
+  specGrad.addColorStop(0, "rgba(255, 255, 255, 0.92)");
+  specGrad.addColorStop(0.55, "rgba(255, 255, 255, 0.45)");
+  specGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = specGrad;
+  ctx.fill();
+  ctx.restore();
+
+  // 5. Crisp white pinpoint reflection glint
+  ctx.beginPath();
+  ctx.arc(x - radius * 0.38, y - radius * 0.38, Math.max(1.2, radius * 0.12), 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawTileOwnership(box, tile) {
+  const owner = gameState.players[tile.owner];
+  if (!owner) return;
+
+  const radius = 8.5;
+  const badgeX = box.x + box.w - radius - 4;
+  const badgeY = box.y + radius + 4;
+
+  drawGlossyBall(ctx, badgeX, badgeY, radius, owner.id, false);
+}
+
+function drawPlayers() {
+  gameState.players.forEach(p => {
+    const isCurrent = (p.id === gameState.currentPlayer);
+    // Draw glossy ball with 13px radius, arranged in 4-way tile formation
+    drawGlossyBall(ctx, p.renderX, p.renderY, 13, p.id, isCurrent);
+  });
+}
+
+function rollDice() {
+  if (gameState.isMoving || gameState.isRolling || !gameState.gameStarted) return;
+
+  gameState.isRolling = true;
+  const rollBtn = document.getElementById("roll-btn");
+  const diceView = document.getElementById("dice-view");
+  rollBtn.disabled = true;
+  diceView.classList.add("rolling");
+
+  const diceFaces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+  let rollTicks = 0;
+  const maxTicks = 12;
+
+  const rollInterval = setInterval(() => {
+    const tempVal = Math.floor(Math.random() * 6) + 1;
+    diceView.innerText = diceFaces[tempVal - 1];
+    rollTicks++;
+
+    if (rollTicks >= maxTicks) {
+      clearInterval(rollInterval);
+      diceView.classList.remove("rolling");
+
+      const finalVal = Math.floor(Math.random() * 6) + 1;
+      gameState.diceValue = finalVal;
+      diceView.innerText = diceFaces[finalVal - 1];
+      gameState.isRolling = false;
+
+      // Animate player moving step by step
+      movePlayerStepByStep(finalVal);
+    }
+  }, 70);
+}
+
+function movePlayerStepByStep(stepsRemaining) {
+  gameState.isMoving = true;
+  const p = gameState.players[gameState.currentPlayer];
+  let stepsLeft = stepsRemaining;
+
+  function doStep() {
+    if (stepsLeft <= 0) {
+      gameState.isMoving = false;
+      processLanding();
+      return;
+    }
+
+    const prevPos = p.position;
+    p.position = (p.position + 1) % 40;
+    stepsLeft--;
+
+    // Circuit check: Crossing START (space 0)
+    if (p.position === 0 || (prevPos > p.position)) {
+      p.money += 200;
+      showNotification(`${p.name} completed city circuit! +₹200 awarded.`);
+      updatePlayerPanels();
+    }
+
+    updatePlayerPanels();
+    setTimeout(doStep, 220);
+  }
+
+  doStep();
+}
+
+function processLanding() {
+  const p = gameState.players[gameState.currentPlayer];
+  const tile = gameState.properties[p.position];
+
+  updatePlayerPanels();
+
+  // 1. Property / Transport / Utility
+  if (tile.type === "property" || tile.type === "transport" || tile.type === "utility") {
+    if (tile.owner === null) {
+      promptBuyProperty(tile);
+      return;
+    } else if (tile.owner === p.id) {
+      showNotification(`Welcome to your property: ${tile.name}!`);
+      nextTurn();
+      return;
+    } else {
+      payRent(p, tile);
+      nextTurn();
+      return;
+    }
+  }
+
+  // 2. Tax Space
+  if (tile.type === "tax") {
+    handleTax(p, tile);
+    nextTurn();
+    return;
+  }
+
+  // 3. Event Space
+  if (tile.type === "event") {
+    handleEvent(p);
+    nextTurn();
+    return;
+  }
+
+  // 4. Go To Jail Space
+  if (tile.type === "gojail") {
+    handleGoToJail(p);
+    nextTurn();
+    return;
+  }
+
+  // 5. Jail Visiting
+  if (tile.type === "jail") {
+    showNotification(`${p.name} is Visiting the Traffic Challan booth.`);
+    nextTurn();
+    return;
+  }
+
+  // 6. Rest Space
+  if (tile.type === "rest") {
+    showNotification(`${p.name} is relaxing at the Central City Park with chai.`);
+    nextTurn();
+    return;
+  }
+
+  // 7. Start Space
+  if (tile.type === "start") {
+    showNotification(`${p.name} arrived at Capital START!`);
+    nextTurn();
+    return;
+  }
+
+  nextTurn();
+}
+
+function promptBuyProperty(tile) {
+  const p = gameState.players[gameState.currentPlayer];
+  gameState.pendingLandingTile = tile;
+
+  const modal = document.getElementById("property-modal");
+  const title = document.getElementById("prop-title");
+  const price = document.getElementById("prop-price");
+  const rent = document.getElementById("prop-rent");
+  const badge = document.getElementById("prop-badge");
+  const buyBtn = document.getElementById("buy-confirm-btn");
+  const msg = document.getElementById("prop-decision-msg");
+
+  title.innerText = tile.name;
+  price.innerText = `₹${tile.price}`;
+  rent.innerText = `₹${tile.rent}`;
+  badge.style.background = GROUP_COLORS[tile.group] || "#2563eb";
+  badge.innerText = `${tile.group.toUpperCase()} ${tile.type.toUpperCase()}`;
+
+  if (p.money >= tile.price) {
+    buyBtn.disabled = false;
+    msg.innerText = `${p.name}, would you like to purchase ${tile.name}?`;
+  } else {
+    buyBtn.disabled = true;
+    msg.innerText = `Insufficient funds! Needed: ₹${tile.price}, Available: ₹${p.money}.`;
+  }
+
+  modal.classList.add("active");
+}
+
+function confirmBuyProperty() {
+  const modal = document.getElementById("property-modal");
+  modal.classList.remove("active");
+
+  const p = gameState.players[gameState.currentPlayer];
+  const tile = gameState.pendingLandingTile;
+
+  if (tile && p.money >= tile.price) {
+    p.money -= tile.price;
+    tile.owner = p.id;
+    p.properties.push(tile.index);
+    showNotification(`${p.name} acquired ${tile.name} for ₹${tile.price}!`);
+    updatePlayerPanels();
+  }
+
+  gameState.pendingLandingTile = null;
+  nextTurn();
+}
+
+function skipProperty() {
+  const modal = document.getElementById("property-modal");
+  modal.classList.remove("active");
+  const p = gameState.players[gameState.currentPlayer];
+  showNotification(`${p.name} decided not to acquire.`);
+  gameState.pendingLandingTile = null;
+  nextTurn();
+}
+
+function payRent(player, tile) {
+  const owner = gameState.players[tile.owner];
+  const rentAmount = tile.rent;
+
+  const actualPayment = Math.min(player.money, rentAmount);
+  player.money -= actualPayment;
+  owner.money += actualPayment;
+
+  showNotification(`${player.name} paid ₹${actualPayment} rent to ${owner.name}!`);
+  updatePlayerPanels();
+}
+
+function handleTax(player, tile) {
+  const taxDue = tile.price;
+  const paid = Math.min(player.money, taxDue);
+  player.money -= paid;
+  showNotification(`${tile.name}: ${player.name} paid ₹${paid}.`);
+  updatePlayerPanels();
+}
+
+function handleEvent(player) {
+  const events = [
+    { text: "Diwali Festivities Bonus! Earned ₹150.", delta: 150 },
+    { text: "Monsoon road drainage cess. Paid ₹100.", delta: -100 },
+    { text: "Smart City IT Hub grant awarded! Earned ₹200.", delta: 200 },
+    { text: "Metro Card top-up and bus fare. Paid ₹70.", delta: -70 },
+    { text: "Tourism Boom dividend received! Earned ₹120.", delta: 120 },
+    { text: "Swachh Bharat Cleanliness award! Earned ₹100.", delta: 100 }
+  ];
+
+  const picked = events[Math.floor(Math.random() * events.length)];
+  if (picked.delta >= 0) {
+    player.money += picked.delta;
+  } else {
+    const fee = Math.min(player.money, Math.abs(picked.delta));
+    player.money -= fee;
+  }
+
+  showNotification(`CITY EVENT: ${picked.text}`);
+  updatePlayerPanels();
+}
+
+function handleGoToJail(player) {
+  showNotification(`🚨 Speed violation! ${player.name} sent to Police Lockup.`);
+  player.position = 10; // JAIL index
+  updatePlayerPanels();
+}
+
+function nextTurn() {
+  gameState.currentPlayer = (gameState.currentPlayer + 1) % 4;
+  const rollBtn = document.getElementById("roll-btn");
+  rollBtn.disabled = false;
+  updatePlayerPanels();
+}
+
+function updatePlayerPanels() {
+  const current = gameState.players[gameState.currentPlayer];
+  document.getElementById("turn-avatar").innerText = current.avatar;
+  document.getElementById("turn-text").innerText = `${current.name}'s Turn`;
+
+  gameState.players.forEach((p, idx) => {
+    const card = document.getElementById(`p-card-${idx}`);
+    const moneyEl = document.getElementById(`p-money-${idx}`);
+    const propsEl = document.getElementById(`p-props-${idx}`);
+    const posEl = document.getElementById(`p-pos-${idx}`);
+
+    moneyEl.innerText = `₹${p.money}`;
+    propsEl.innerText = p.properties.length;
+
+    const currentTile = BOARD_TILES[p.position];
+    posEl.innerText = currentTile ? currentTile.name : "START";
+
+    if (idx === gameState.currentPlayer) {
+      card.classList.add("active-turn");
+    } else {
+      card.classList.remove("active-turn");
+    }
+  });
+}
+
+function showNotification(message) {
+  const container = document.getElementById("toast-container");
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerText = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(-10px) scale(0.9)";
+    setTimeout(() => toast.remove(), 400);
+  }, 2600);
+}
+
+/**
+ * ADVERTISEMENT INTEGRATION MANAGER (Decoupled)
+ */
+const AdManager = {
+  isInitialized: false,
+
+  init() {
+    this.isInitialized = true;
+  },
+
+  handleResize() {
+    resizeCanvas();
+  }
+};
+
+window.onload = function() {
+  initializeGame();
+  AdManager.init();
+};
+</script>
+</body>
+</html>
